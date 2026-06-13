@@ -334,17 +334,52 @@ class SemanticEvidenceMapper:
     
     def _mock_similarity(self, text1: str, text2: str) -> float:
         """Mock similarity calculation for testing"""
-        # Simple word overlap
-        words1 = set(text1.lower().split())
-        words2 = set(text2.lower().split())
+        # Simple but effective word overlap for compliance terms
+        
+        # Normalize text
+        text1_lower = text1.lower()
+        text2_lower = text2.lower()
+        
+        # Create word sets (skip very short words)
+        words1 = set(w for w in text1_lower.split() if len(w) > 2)
+        words2 = set(w for w in text2_lower.split() if len(w) > 2)
         
         if not words1 or not words2:
             return 0.5
         
+        # Calculate basic Jaccard similarity
         overlap = len(words1 & words2)
-        total = len(words1 | words2)
+        union = len(words1 | words2)
+        jaccard = overlap / union if union > 0 else 0
         
-        return min(1.0, overlap / total + 0.3)  # Slightly boost for consistency
+        # Compliance synonym matching - improve Jaccard with semantic understanding
+        synonyms = {
+            'encrypt': ['encryption', 'encrypted', 'aes-256', 'aes', 'kms'],
+            'audit': ['logging', 'log', 'logs', 'monitor', 'monitoring', 'trail'],
+            'rotate': ['rotation', 'rotated', 'quarterly', '90-day', '90', 'cycling'],
+            'access': ['auth', 'authentication', 'authorized', 'control'],
+            'key': ['keys', 'kms', 'hsm', 'encryption'],
+            'mfa': ['multi-factor', 'factor', '2fa'],
+            'fresh': ['recent', 'current', 'latest', 'up-to-date'],
+            'configure': ['configuration', 'configured', 'config'],
+        }
+        
+        # Count matching synonym groups
+        semantic_score = 0
+        for base, variants in synonyms.items():
+            all_forms = [base] + variants
+            if any(form in text1_lower for form in all_forms) and \
+               any(form in text2_lower for form in all_forms):
+                semantic_score += 0.05
+        
+        # Combine: word overlap (60%) + semantic synonyms (40%)
+        combined = (jaccard * 0.6) + min(0.4, semantic_score)
+        
+        # Ensure minimum relevance for any text with some overlap
+        if overlap > 0:
+            combined = max(combined, 0.45)
+        
+        return min(1.0, combined)
     
     def _mock_encode(self, text: str) -> np.ndarray:
         """Mock encoding for testing"""

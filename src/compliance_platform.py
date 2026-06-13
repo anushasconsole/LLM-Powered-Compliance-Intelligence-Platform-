@@ -247,20 +247,22 @@ class ComplianceIntelligencePlatform:
                 evidence.get('freshness_days', 30),
                 confidence=evidence.get('confidence_score', 0.5)
             )
-            
-            # Semantically link to requirements
+        
+        # Semantically link evidence to requirements
+        print("Performing semantic matching...")
+        for req in self.extracted_requirements:
             matches = self.semantic_mapper.search_evidence_for_requirement(
-                'N/A',
-                evidence.get('description', ''),
-                [{'evidence_id': req.req_id, 'description': req.requirement_text} 
-                 for req in self.extracted_requirements],
-                threshold=0.5
+                req.req_id,
+                req.requirement_text,
+                self.evidence_artifacts,
+                threshold=0.35,
+                top_k=5
             )
             
             for match in matches:
-                req_id = match.evidence_id
+                evidence_id = match.evidence_id
                 strength = match.similarity_score
-                self.knowledge_graph.link_evidence_supports(evidence_id, req_id, strength=strength)
+                self.knowledge_graph.link_evidence_supports(evidence_id, req.req_id, strength=strength)
         
         print("Knowledge graph built successfully")
         self.knowledge_graph.print_summary()

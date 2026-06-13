@@ -133,8 +133,12 @@ class ComplianceCopilot:
         if 'missing' in query_lower and 'evidence' in query_lower:
             return QueryType.MISSING_EVIDENCE
         
+        # Check for frameworks BEFORE control status (frameworks are more specific)
         if any(fw in query_lower for fw in self.framework_patterns):
             return QueryType.SHOW_FRAMEWORK_STATUS
+        
+        if 'status' in query_lower or ('control' in query_lower and 'framework' not in query_lower):
+            return QueryType.CONTROL_STATUS
         
         return QueryType.REQUIREMENT_DETAILS
     

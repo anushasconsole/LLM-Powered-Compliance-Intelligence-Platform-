@@ -227,48 +227,137 @@ Example format:
     
     def _mock_extract(self, policy_doc: PolicyDocument) -> List[ExtractedRequirement]:
         """Generate mock requirements for testing (no API call)"""
-        mock_requirements = [
-            ExtractedRequirement(
-                req_id="MOCK-001",
-                policy_id=policy_doc.policy_id,
-                policy_name=policy_doc.policy_name,
-                requirement_text="All personal data must be encrypted at rest",
-                structured_requirement="Encryption at rest: AES-256 or stronger",
-                frameworks=["GDPR", "NIST", "PCI-DSS"],
-                control_area="Encryption",
-                burden_of_proof=[
-                    "Encryption algorithm is AES-256 or stronger",
-                    "Encryption is enabled on all data stores",
-                    "Keys are properly managed"
-                ],
-                evidence_types_expected=["Encryption Certificate", "Configuration Snapshot"],
-                freshness_requirement="quarterly",
-                responsible_team="Security Team",
-                severity="CRITICAL",
-                confidence_score=0.9,
-                extraction_rationale="Critical compliance requirement"
-            ),
-            ExtractedRequirement(
-                req_id="MOCK-002",
-                policy_id=policy_doc.policy_id,
-                policy_name=policy_doc.policy_name,
-                requirement_text="Access to systems must be logged and audited",
-                structured_requirement="Audit logging: All access events logged with timestamp and actor",
-                frameworks=["GDPR", "NIST", "SOX"],
-                control_area="Audit Logging",
-                burden_of_proof=[
-                    "Audit logs capture all access attempts",
-                    "Logs include timestamp, actor, action, and outcome",
-                    "Logs are retained for minimum 90 days"
-                ],
-                evidence_types_expected=["Audit Log", "Configuration Snapshot"],
-                freshness_requirement="continuous",
-                responsible_team="Audit Team",
-                severity="CRITICAL",
-                confidence_score=0.85,
-                extraction_rationale="Fundamental audit requirement"
-            ),
-        ]
+        # Generate unique requirements based on policy
+        if "security" in policy_doc.policy_name.lower() or "encryption" in policy_doc.policy_name.lower():
+            mock_requirements = [
+                ExtractedRequirement(
+                    req_id=f"{policy_doc.policy_id}-REQ001",
+                    policy_id=policy_doc.policy_id,
+                    policy_name=policy_doc.policy_name,
+                    requirement_text="All personal data must be encrypted at rest",
+                    structured_requirement="Encryption at rest: AES-256 or stronger",
+                    frameworks=["GDPR", "NIST", "PCI-DSS"],
+                    control_area="Encryption",
+                    burden_of_proof=[
+                        "Encryption algorithm is AES-256 or stronger",
+                        "Encryption is enabled on all data stores",
+                        "Keys are properly managed"
+                    ],
+                    evidence_types_expected=["Encryption Certificate", "Configuration Snapshot"],
+                    freshness_requirement="quarterly",
+                    responsible_team="Security Team",
+                    severity="CRITICAL",
+                    confidence_score=0.9,
+                    extraction_rationale="Critical compliance requirement"
+                ),
+                ExtractedRequirement(
+                    req_id=f"{policy_doc.policy_id}-REQ002",
+                    policy_id=policy_doc.policy_id,
+                    policy_name=policy_doc.policy_name,
+                    requirement_text="Encryption keys must be rotated quarterly",
+                    structured_requirement="Key rotation: All encryption keys rotated at least quarterly",
+                    frameworks=["NIST", "PCI-DSS", "ISO 27001"],
+                    control_area="Key Management",
+                    burden_of_proof=[
+                        "Key rotation schedule documented",
+                        "Last rotation date is within 90 days",
+                        "Rotation logs available"
+                    ],
+                    evidence_types_expected=["Key Rotation Log", "Audit Log"],
+                    freshness_requirement="monthly",
+                    responsible_team="Security Team",
+                    severity="HIGH",
+                    confidence_score=0.85,
+                    extraction_rationale="Key rotation requirement from Section 2.1"
+                ),
+            ]
+        elif "access" in policy_doc.policy_name.lower():
+            mock_requirements = [
+                ExtractedRequirement(
+                    req_id=f"{policy_doc.policy_id}-REQ001",
+                    policy_id=policy_doc.policy_id,
+                    policy_name=policy_doc.policy_name,
+                    requirement_text="Access to systems must be logged and audited",
+                    structured_requirement="Audit logging: All access events logged with timestamp and actor",
+                    frameworks=["GDPR", "NIST", "SOX"],
+                    control_area="Audit Logging",
+                    burden_of_proof=[
+                        "Audit logs capture all access attempts",
+                        "Logs include timestamp, actor, action, and outcome",
+                        "Logs are retained for minimum 90 days"
+                    ],
+                    evidence_types_expected=["Audit Log", "Configuration Snapshot"],
+                    freshness_requirement="continuous",
+                    responsible_team="Audit Team",
+                    severity="CRITICAL",
+                    confidence_score=0.85,
+                    extraction_rationale="Fundamental audit requirement"
+                ),
+                ExtractedRequirement(
+                    req_id=f"{policy_doc.policy_id}-REQ002",
+                    policy_id=policy_doc.policy_id,
+                    policy_name=policy_doc.policy_name,
+                    requirement_text="Multi-factor authentication must be enabled for all users",
+                    structured_requirement="MFA: All user accounts protected by MFA",
+                    frameworks=["GDPR", "NIST", "PCI-DSS", "HIPAA"],
+                    control_area="Multi-Factor Auth",
+                    burden_of_proof=[
+                        "MFA is enabled on all accounts",
+                        "Users are required to use MFA",
+                        "Backup authentication methods documented"
+                    ],
+                    evidence_types_expected=["Configuration Snapshot", "Policy Document", "Test Report"],
+                    freshness_requirement="quarterly",
+                    responsible_team="Security Team",
+                    severity="CRITICAL",
+                    confidence_score=0.9,
+                    extraction_rationale="Essential for access control from Section 3.2"
+                ),
+            ]
+        else:  # audit/monitoring policies
+            mock_requirements = [
+                ExtractedRequirement(
+                    req_id=f"{policy_doc.policy_id}-REQ001",
+                    policy_id=policy_doc.policy_id,
+                    policy_name=policy_doc.policy_name,
+                    requirement_text="All system activities must be monitored and logged in real-time",
+                    structured_requirement="Monitoring: Real-time logging of all system activities",
+                    frameworks=["NIST", "SOX", "HIPAA"],
+                    control_area="Audit Logging",
+                    burden_of_proof=[
+                        "Monitoring is enabled on all systems",
+                        "Logs are collected in real-time",
+                        "Log storage is secure and tamper-proof"
+                    ],
+                    evidence_types_expected=["Configuration Snapshot", "Monitoring Report"],
+                    freshness_requirement="continuous",
+                    responsible_team="Audit Team",
+                    severity="CRITICAL",
+                    confidence_score=0.88,
+                    extraction_rationale="Required for continuous audit trail"
+                ),
+                ExtractedRequirement(
+                    req_id=f"{policy_doc.policy_id}-REQ002",
+                    policy_id=policy_doc.policy_id,
+                    policy_name=policy_doc.policy_name,
+                    requirement_text="Security incident response procedures must be documented and tested",
+                    structured_requirement="Incident Response: Documented procedures with regular testing",
+                    frameworks=["NIST", "HIPAA", "ISO 27001"],
+                    control_area="Incident Response",
+                    burden_of_proof=[
+                        "Incident response plan exists and is current",
+                        "Plan has been tested in past 12 months",
+                        "Roles and responsibilities are defined"
+                    ],
+                    evidence_types_expected=["Policy Document", "Test Report", "Training Record"],
+                    freshness_requirement="annually",
+                    responsible_team="Security Team",
+                    severity="HIGH",
+                    confidence_score=0.82,
+                    extraction_rationale="Required for HIPAA compliance"
+                ),
+            ]
+        
         return mock_requirements
     
     def extract_from_file(self, filepath: str) -> PolicyDocument:
