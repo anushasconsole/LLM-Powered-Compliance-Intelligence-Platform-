@@ -1,0 +1,84 @@
+POLICY: Data Encryption and Protection
+POLICY_ID: POL-ENC-001
+VERSION: 2.1
+STATUS: Active
+LAST_UPDATED: 2026-03-15
+
+REQUIREMENT 1: All data at rest must be encrypted using AES-256 or stronger
+- Responsible: Infrastructure Security
+- Scope: Databases, file storage, backups
+- Evidence Source: AWS KMS Configuration, Database Settings
+- Audit Frequency: Monthly
+- Compliance Mapping: GDPR Article 32, NIST SC-7, PCI-DSS 3.4
+
+REQUIREMENT 2: Encryption keys must be rotated at least annually
+- Responsible: Key Management Team
+- scope: All encryption keys
+- Evidence Source: Key Management System Audit Logs
+- Audit Frequency: Quarterly
+- Compliance Mapping: NIST SC-7, ISO 27001 A.10.1.1
+
+REQUIREMENT 3: Data in transit must use TLS 1.2 or higher
+- Responsible: Network Security
+- Scope: All network communications involving sensitive data
+- Evidence Source: Network Configuration, SSL Certificate Inventory
+- Audit Frequency: Continuous
+- Compliance Mapping: GDPR Article 32, NIST SC-7
+
+---
+
+POLICY: Access Control and Identity Management
+POLICY_ID: POL-AC-001
+VERSION: 3.0
+STATUS: Active
+LAST_UPDATED: 2026-02-01
+
+REQUIREMENT 1: Administrative access requires multi-factor authentication
+- Responsible: IT Operations
+- Scope: All administrative accounts
+- Evidence Source: Azure AD Configuration, Login Logs
+- Audit Frequency: Daily
+- Compliance Mapping: NIST IA-2, CIS 5.3.1
+
+REQUIREMENT 2: Access must follow principle of least privilege
+- Responsible: Access Control Board
+- Scope: All user access rights
+- Evidence Source: IAM Systems, Access Reviews
+- Audit Frequency: Quarterly
+- Compliance Mapping: NIST AC-2, NIST AC-3, SOX 302
+
+REQUIREMENT 3: Privileged accounts must have no personal use
+- Responsible: Security Operations
+- Scope: Admin, root, service accounts
+- Evidence Source: Activity Logs, Browser History (if applicable)
+- Audit Frequency: Monthly
+- Compliance Mapping: NIST AC-3, CIS 4.1
+
+---
+
+POLICY: Audit Logging and Monitoring
+POLICY_ID: POL-AUD-001
+VERSION: 2.5
+STATUS: Active
+LAST_UPDATED: 2026-01-30
+
+REQUIREMENT 1: All access to sensitive data must be logged
+- Responsible: Security Operations
+- Scope: Databases, file systems, APIs
+- Evidence Source: Application Logs, Database Audit Trails
+- Audit Frequency: Daily
+- Compliance Mapping: GDPR Article 32, NIST AU-2, SOX 302
+
+REQUIREMENT 2: Logs must be retained for minimum 90 days
+- Responsible: Log Management Team
+- Scope: All security-relevant logs
+- Evidence Source: Log Storage Configuration, Retention Policies
+- Audit Frequency: Monthly
+- Compliance Mapping: NIST AU-4, PCI-DSS 3.4
+
+REQUIREMENT 3: Log access must be restricted and monitored
+- Responsible: Security Operations
+- Scope: All log files and systems
+- Evidence Source: Access Control Lists, Log Access Logs
+- Audit Frequency: Weekly
+- Compliance Mapping: NIST AU-5, ISO 27001 A.10.2.3
