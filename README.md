@@ -1,6 +1,6 @@
 # Compliance Narrative Engine & Intelligence Platform
 
-**Problem Statement 03:** Automated Compliance Evidence Collection & Audit
+**Problem Statement 03:** Automated Compliance Evidence Collection & Audit 
 
 ---
 
