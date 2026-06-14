@@ -1,0 +1,200 @@
+POLICY: Data Encryption and Protection
+POLICY_ID: POL-ENC-001
+VERSION: 2.1
+STATUS: Active
+LAST_UPDATED: 2026-03-15
+
+REQUIREMENT 1: All data at rest must be encrypted using AES-256 or stronger
+- Responsible: Infrastructure Security
+- Scope: Databases, file storage, backups
+- Evidence Source: AWS KMS Configuration, Database Settings
+- Audit Frequency: Monthly
+- Compliance Mapping: GDPR Article 32, NIST SC-7, PCI-DSS 3.4
+
+REQUIREMENT 2: Encryption keys must be rotated at least annually
+- Responsible: Key Management Team
+- scope: All encryption keys
+- Evidence Source: Key Management System Audit Logs
+- Audit Frequency: Quarterly
+- Compliance Mapping: NIST SC-7, ISO 27001 A.10.1.1
+
+REQUIREMENT 3: Data in transit must use TLS 1.2 or higher
+- Responsible: Network Security
+- Scope: All network communications involving sensitive data
+- Evidence Source: Network Configuration, SSL Certificate Inventory
+- Audit Frequency: Continuous
+- Compliance Mapping: GDPR Article 32, NIST SC-7
+
+---
+
+POLICY: Access Control and Identity Management
+POLICY_ID: POL-AC-001
+VERSION: 3.0
+STATUS: Active
+LAST_UPDATED: 2026-02-01
+
+REQUIREMENT 1: Administrative access requires multi-factor authentication
+- Responsible: IT Operations
+- Scope: All administrative accounts
+- Evidence Source: Azure AD Configuration, Login Logs
+- Audit Frequency: Daily
+- Compliance Mapping: NIST IA-2, CIS 5.3.1
+
+REQUIREMENT 2: Access must follow principle of least privilege
+- Responsible: Access Control Board
+- Scope: All user access rights
+- Evidence Source: IAM Systems, Access Reviews
+- Audit Frequency: Quarterly
+- Compliance Mapping: NIST AC-2, NIST AC-3, SOX 302
+
+REQUIREMENT 3: Privileged accounts must have no personal use
+- Responsible: Security Operations
+- Scope: Admin, root, service accounts
+- Evidence Source: Activity Logs, Browser History (if applicable)
+- Audit Frequency: Monthly
+- Compliance Mapping: NIST AC-3, CIS 4.1
+
+---
+
+POLICY: Audit Logging and Monitoring
+POLICY_ID: POL-AUD-001
+VERSION: 2.5
+STATUS: Active
+LAST_UPDATED: 2026-01-30
+
+REQUIREMENT 1: All access to sensitive data must be logged
+- Responsible: Security Operations
+- Scope: Databases, file systems, APIs
+- Evidence Source: Application Logs, Database Audit Trails
+- Audit Frequency: Daily
+- Compliance Mapping: GDPR Article 32, NIST AU-2, SOX 302
+
+REQUIREMENT 2: Logs must be retained for minimum 90 days
+- Responsible: Log Management Team
+- Scope: All security-relevant logs
+- Evidence Source: Log Storage Configuration, Retention Policies
+- Audit Frequency: Monthly
+- Compliance Mapping: NIST AU-4, PCI-DSS 3.4
+
+REQUIREMENT 3: Log access must be restricted and monitored
+- Responsible: Security Operations
+- Scope: All log files and systems
+- Evidence Source: Access Control Lists, Log Access Logs
+- Audit Frequency: Weekly
+- Compliance Mapping: NIST AU-5, ISO 27001 A.10.2.3
+
+---
+
+POLICY: Healthcare Data Protection (HIPAA Compliance)
+POLICY_ID: POL-HIPAA-001
+VERSION: 1.0
+STATUS: Active
+LAST_UPDATED: 2026-04-01
+
+REQUIREMENT 1: Protected Health Information (PHI) must be encrypted at rest and in transit
+- Responsible: Healthcare IT Security
+- Scope: All systems storing or transmitting PHI
+- Evidence Source: Encryption Configuration, HIPAA Risk Assessments
+- Audit Frequency: Monthly
+- Compliance Mapping: HIPAA Security Rule 164.312(a)(2)(iv), HIPAA 164.312(e)(1)
+
+REQUIREMENT 2: Access to PHI must be logged and auditable
+- Responsible: Audit and Compliance Team
+- Scope: All PHI access by users and systems
+- Evidence Source: Audit Logs, Access Reports
+- Audit Frequency: Weekly
+- Compliance Mapping: HIPAA 164.312(b), HIPAA 164.308(a)(1)(ii)(D)
+
+REQUIREMENT 3: PHI breach notification procedures must be documented and tested
+- Responsible: Privacy Officer
+- Scope: All PHI incidents and breaches
+- Evidence Source: Incident Response Plans, Breach Notification Documentation
+- Audit Frequency: Quarterly
+- Compliance Mapping: HIPAA Breach Notification Rule 164.400-414
+
+---
+
+POLICY: Financial Controls and Reporting (SOX Compliance)
+POLICY_ID: POL-SOX-001
+VERSION: 2.0
+STATUS: Active
+LAST_UPDATED: 2026-03-20
+
+REQUIREMENT 1: Financial system access must be controlled and audited
+- Responsible: Financial Controls Team
+- Scope: All financial applications and databases
+- Evidence Source: Access Control Reports, SOX 404 Documentation
+- Audit Frequency: Quarterly
+- Compliance Mapping: SOX 302, SOX 404, SOX Section 404
+
+REQUIREMENT 2: Changes to financial systems must be documented and approved
+- Responsible: Change Management Board
+- Scope: All production financial systems
+- Evidence Source: Change Requests, Approval Records, Deployment Logs
+- Audit Frequency: Monthly
+- Compliance Mapping: SOX 404 Internal Controls
+
+REQUIREMENT 3: Segregation of duties must be enforced in financial processes
+- Responsible: Internal Audit
+- Scope: Financial transaction processing and approval
+- Evidence Source: Role Assignments, Conflict of Interest Reports
+- Audit Frequency: Quarterly
+- Compliance Mapping: SOX 302 Certification Requirements
+
+---
+
+POLICY: Payment Card Data Security (PCI-DSS Compliance)
+POLICY_ID: POL-PCI-001
+VERSION: 3.2
+STATUS: Active
+LAST_UPDATED: 2026-02-15
+
+REQUIREMENT 1: Cardholder data must be encrypted using strong cryptography
+- Responsible: Payment Security Team
+- Scope: All systems storing, processing, or transmitting cardholder data
+- Evidence Source: PCI-DSS Self-Assessment Questionnaire, Encryption Audits
+- Audit Frequency: Monthly
+- Compliance Mapping: PCI-DSS 3.4, PCI-DSS 4.1
+
+REQUIREMENT 2: Access to cardholder data must be restricted by business need-to-know
+- Responsible: Data Security Officer
+- Scope: All personnel and systems accessing cardholder data
+- Evidence Source: Access Control Matrix, User Access Reviews
+- Audit Frequency: Quarterly
+- Compliance Mapping: PCI-DSS 7.1, PCI-DSS 8.1
+
+REQUIREMENT 3: Wireless networks transmitting cardholder data must use strong encryption
+- Responsible: Network Security
+- Scope: All wireless networks in cardholder data environment
+- Evidence Source: Wireless Network Configurations, Penetration Test Reports
+- Audit Frequency: Quarterly
+- Compliance Mapping: PCI-DSS 4.1.1, PCI-DSS 2.1.1
+
+---
+
+POLICY: Information Security Management (ISO 27001 Compliance)
+POLICY_ID: POL-ISO-001
+VERSION: 1.5
+STATUS: Active
+LAST_UPDATED: 2026-03-10
+
+REQUIREMENT 1: Information assets must be classified and protected appropriately
+- Responsible: Information Security Manager
+- Scope: All organizational information assets
+- Evidence Source: Asset Inventory, Classification Labels, Protection Controls
+- Audit Frequency: Annually
+- Compliance Mapping: ISO 27001 A.8.2, ISO 27001 A.13.1
+
+REQUIREMENT 2: Security incidents must be reported and managed through defined procedures
+- Responsible: Security Operations Center
+- Scope: All security incidents and events
+- Evidence Source: Incident Reports, Response Procedures, Post-Incident Reviews
+- Audit Frequency: Monthly
+- Compliance Mapping: ISO 27001 A.16.1, ISO 27001 A.6.1
+
+REQUIREMENT 3: Business continuity plans must be documented and tested
+- Responsible: Business Continuity Manager
+- Scope: All critical business processes and systems
+- Evidence Source: BCP Documentation, Test Reports, Recovery Procedures
+- Audit Frequency: Semi-Annually
+- Compliance Mapping: ISO 27001 A.17.1, ISO 27001 A.17.2
