@@ -17,6 +17,7 @@ import Settings from './pages/Settings.jsx';
 import ComplianceCopilot from './pages/ComplianceCopilot.jsx';
 import KnowledgeGraphPage from './pages/KnowledgeGraphPage.jsx';
 import ConfidencePage from './pages/ConfidencePage.jsx';
+import AnomalyDetection from './pages/AnomalyDetection.jsx';
 
 import { healthAPI } from './api/client.jsx';
 
@@ -111,6 +112,7 @@ function App() {
               <Route path="/challenge-audit" element={<ChallengeAudit />} />
               <Route path="/confidence" element={<ConfidencePage />} />
               <Route path="/knowledge-graph" element={<KnowledgeGraphPage />} />
+              <Route path="/anomaly" element={<AnomalyDetection />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/settings" element={<Settings />} />
             </Routes>

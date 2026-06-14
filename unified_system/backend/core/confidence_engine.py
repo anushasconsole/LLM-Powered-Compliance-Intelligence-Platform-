@@ -121,7 +121,11 @@ class AuditorConfidenceEngine:
             return 0.0
         scores = []
         for e in evs:
-            d = e.get('freshness_days', 999)
+            raw = e.get('freshness_days', 999)
+            try:
+                d = int(float(raw)) if raw not in (None, '', 'None') else 999
+            except (ValueError, TypeError):
+                d = 999
             if d <= 7:
                 scores.append(1.0)
             elif d <= 30:
@@ -163,22 +167,34 @@ class AuditorConfidenceEngine:
     def _semantic_quality(self, evs: List[Dict], quality_scores: Dict) -> float:
         if not evs:
             return 0.0
-        scores = [quality_scores.get(e.get('evidence_id', ''), e.get('confidence_score', 0.5)) for e in evs]
+        scores = []
+        for e in evs:
+            raw = quality_scores.get(e.get('evidence_id', ''),
+                                     e.get('confidence_score', 0.5))
+            try:
+                scores.append(float(raw) if raw not in (None, '', 'None') else 0.5)
+            except (ValueError, TypeError):
+                scores.append(0.5)
         return sum(scores) / len(scores)
 
     def _type_count(self, evs: List[Dict]) -> int:
         return len(set(e.get('evidence_type', e.get('type', 'Unknown')) for e in evs))
 
     def _status(self, conf: float, sup: int, con: int, severity: str) -> str:
-        if con > 0 or sup == 0:
+        # No supporting evidence at all → immediately non-compliant
+        if sup == 0:
             return "NON_COMPLIANT"
         ct = 0.85 if severity == "CRITICAL" else 0.75
         at = 0.65 if severity == "CRITICAL" else 0.50
+        # Contradicting evidence lowers the confidence score via the contradiction_penalty
+        # already applied above; don't hard-fail here so partial compliance can surface
         if conf >= ct:
             return "COMPLIANT"
         elif conf >= at:
             return "CONDITIONAL"
-        return "AT_RISK"
+        elif conf >= 0.30:
+            return "AT_RISK"
+        return "NON_COMPLIANT"
 
     def _red_flags(self, conf, supporting, contradicting, freshness, review) -> List[str]:
         flags = []
@@ -221,7 +237,13 @@ class AuditorConfidenceEngine:
     def _freshness_reason(self, evs: List[Dict]) -> str:
         if not evs:
             return "No evidence to assess"
-        avg = sum(e.get('freshness_days', 999) for e in evs) / len(evs)
+        def _safe_days(e):
+            raw = e.get('freshness_days', 999)
+            try:
+                return int(float(raw)) if raw not in (None, '', 'None') else 999
+            except (ValueError, TypeError):
+                return 999
+        avg = sum(_safe_days(e) for e in evs) / len(evs)
         if avg <= 7:
             return "Evidence is very recent (< 1 week)"
         elif avg <= 30:

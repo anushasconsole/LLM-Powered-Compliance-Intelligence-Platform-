@@ -185,8 +185,16 @@ class UnifiedCompliancePlatform:
 
         # Add evidence
         for ev in evidence_list:
-            freshness = int(ev.get('freshness_days', 30) or 30)
-            confidence = float(ev.get('confidence_score', 0.5) or 0.5)
+            raw_fresh = ev.get('freshness_days', 30)
+            raw_conf  = ev.get('confidence_score', 0.5)
+            try:
+                freshness = int(float(raw_fresh)) if raw_fresh not in (None, '', 'None') else 30
+            except (ValueError, TypeError):
+                freshness = 30
+            try:
+                confidence = float(raw_conf) if raw_conf not in (None, '', 'None') else 0.5
+            except (ValueError, TypeError):
+                confidence = 0.5
             kg.add_evidence(
                 ev['evidence_id'],
                 ev.get('evidence_summary', ''),

@@ -62,13 +62,15 @@ const Dashboard = () => {
     return () => clearInterval(timer);
   }, [dashData]);
 
+  // Trend data — Jan-May are illustrative baselines; Jun uses the live score
   const trendData = [
     { month: 'Jan', score: 65 }, { month: 'Feb', score: 68 },
     { month: 'Mar', score: 72 }, { month: 'Apr', score: 75 },
-    { month: 'May', score: 77 }, { month: 'Jun', score: animatedScore },
+    { month: 'May', score: 77 }, { month: 'Jun', score: Math.round(animatedScore) },
   ];
 
-  const evidenceDistribution = [
+  // Evidence distribution — use real counts when available, fall back to illustrative
+  const evidenceDistribution = dashData?.evidenceByType ?? [
     { name: 'Config', value: 150, color: '#8b5cf6' },
     { name: 'Audit Logs', value: 120, color: '#ec4899' },
     { name: 'Certificates', value: 80, color: '#10b981' },
@@ -162,10 +164,12 @@ const Dashboard = () => {
                 >
                   {metric.value}
                 </motion.p>
-                <div className="mt-3 flex items-center text-green-400 text-sm">
-                  <TrendingUp className="w-4 h-4 mr-1" />
-                  <span>+12% this month</span>
-                </div>
+                {index === 2 && (
+                  <div className="mt-3 flex items-center text-green-400 text-sm">
+                    <TrendingUp className="w-4 h-4 mr-1" />
+                    <span>Live score</span>
+                  </div>
+                )}
               </div>
             </motion.div>
           );
@@ -252,7 +256,9 @@ const Dashboard = () => {
                   }`}>
                     {framework.status.toUpperCase()}
                   </span>
-                  <span className="text-xs text-gray-400">45/50 Requirements</span>
+                  <span className="text-xs text-gray-400">
+                    {framework.covered_requirements ?? '—'}/{framework.total_requirements ?? '—'} Requirements
+                  </span>
                 </div>
               </div>
             </motion.div>

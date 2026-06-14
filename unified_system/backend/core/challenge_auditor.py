@@ -123,8 +123,14 @@ class ChallengeAuditor:
     def _check_freshness(self, req_id: str, evs: List[Dict]) -> Optional[AuditChallenge]:
         if not evs:
             return None
-        stale_critical = [e for e in evs if e.get('freshness_days', 0) > 180]
-        stale_high = [e for e in evs if 90 < e.get('freshness_days', 0) <= 180]
+        def _days(e):
+            raw = e.get('freshness_days', 0)
+            try:
+                return int(float(raw)) if raw not in (None, '', 'None') else 0
+            except (ValueError, TypeError):
+                return 0
+        stale_critical = [e for e in evs if _days(e) > 180]
+        stale_high     = [e for e in evs if 90 < _days(e) <= 180]
         if stale_critical:
             return AuditChallenge(
                 challenge_id=f"CH-STALE-{req_id}",

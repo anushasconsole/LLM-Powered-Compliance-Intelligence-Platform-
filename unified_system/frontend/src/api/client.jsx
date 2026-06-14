@@ -60,9 +60,10 @@ export const requirementsAPI = {
 };
 
 export const reportsAPI = {
-  getAll:    ()               => api.get('/api/reports'),
-  getById:   (id)             => api.get(`/api/reports/${id}`),
-  generate:  (framework = 'ALL') => api.post('/api/reports/generate', { framework }),
+  getAll:      ()               => api.get('/api/reports'),
+  getById:     (id)             => api.get(`/api/reports/${id}`),
+  generate:    (framework = 'ALL') => api.post('/api/reports/generate', { framework }),
+  downloadPdf: (id)             => api.get(`/api/reports/${id}/pdf`, { responseType: 'blob' }),
 };
 
 export const copilotAPI = {
@@ -77,6 +78,18 @@ export const knowledgeGraphAPI = {
 export const mappingsAPI = {
   getAll:  () => api.get('/api/mappings'),
   rebuild: () => api.post('/api/mappings/rebuild'),
+};
+
+export const anomalyAPI = {
+  detect:   (body = {}) => api.post('/api/anomaly/detect', body),
+  evaluate: (body = {}) => api.post('/api/anomaly/evaluate', body),
+  summary:  (threshold) => api.get('/api/anomaly/summary', { params: threshold ? { threshold } : {} }),
+};
+
+export const integrationsAPI = {
+  list:          ()           => api.get('/api/integrations'),
+  collectAll:    (sources)    => api.post('/api/integrations/collect', sources ? { sources } : {}),
+  collectOne:    (sourceId)   => api.post(`/api/integrations/collect/${sourceId}`),
 };
 
 export default api;

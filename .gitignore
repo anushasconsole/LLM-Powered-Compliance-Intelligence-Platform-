@@ -1,4 +1,27 @@
+# Python
 venv/
+.venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.env
+
+# Database (auto-created on startup)
+unified_system/backend/data/compliance.db
+
+# Frontend dependencies (large, installed via npm install)
+unified_system/frontend/node_modules/
+
+# Generated output files (not source)
 reports/
+*.html
+*.pdf
+
+# OS
+.DS_Store
+Thumbs.db

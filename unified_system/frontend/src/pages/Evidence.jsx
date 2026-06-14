@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Database, Search, CheckCircle, AlertCircle, Clock, XCircle, RefreshCw } from 'lucide-react';
-import { evidenceAPI } from '../api/client.jsx';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Database, Search, CheckCircle, AlertCircle, Clock,
+  XCircle, RefreshCw, Zap, ChevronDown, ChevronUp, Play, Loader,
+} from 'lucide-react';
+import { evidenceAPI, integrationsAPI } from '../api/client.jsx';
+
+// ── Integration source metadata ──────────────────────────────────────────────
+const INTEGRATION_META = {
+  cloudtrail:   { label: 'AWS CloudTrail',          color: '#f59e0b', desc: 'API audit events — CreateKey, RotateKey, PutBucketEncryption…' },
+  aws_config:   { label: 'AWS Config',              color: '#3b82f6', desc: 'Config rule compliance — encrypted-volumes, rds-encryption, mfa-enabled…' },
+  splunk:       { label: 'Splunk SIEM',             color: '#8b5cf6', desc: 'Security log events — firewall, auth, database audit, network traffic…' },
+  vendor_certs: { label: 'Vendor Certifications',   color: '#10b981', desc: '3rd-party certs — AWS SOC2, Azure ISO27001, Okta SOC2, Snowflake HIPAA…' },
+};
 
 const Evidence = () => {
   const [evidence, setEvidence] = useState([]);
@@ -11,6 +22,13 @@ const Evidence = () => {
   const [filterFramework, setFilterFramework] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [selectedEvidence, setSelectedEvidence] = useState(null);
+
+  // Integration panel state
+  const [showIntegrations, setShowIntegrations]       = useState(false);
+  const [integrations, setIntegrations]               = useState([]);
+  const [collectingAll, setCollectingAll]             = useState(false);
+  const [collectingOne, setCollectingOne]             = useState({});  // { sourceId: true }
+  const [collectResult, setCollectResult]             = useState(null);
 
   const frameworks = ['ALL', 'GDPR', 'SOX', 'NIST', 'PCI-DSS', 'ISO27001', 'HIPAA'];
   const statuses = ['ALL', 'Approved', 'Needs_Update', 'Pending_Review', 'Rejected'];
@@ -29,7 +47,45 @@ const Evidence = () => {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  // Load available integrations
+  const loadIntegrations = async () => {
+    try {
+      const res = await integrationsAPI.list();
+      setIntegrations(res.data?.integrations || []);
+    } catch (e) { console.error(e); }
+  };
+
+  // Collect from ALL integrations
+  const collectAll = async () => {
+    setCollectingAll(true);
+    setCollectResult(null);
+    try {
+      const res = await integrationsAPI.collectAll();
+      setCollectResult(res.data);
+      await load();   // refresh evidence table
+    } catch (e) {
+      setCollectResult({ error: String(e) });
+    } finally {
+      setCollectingAll(false);
+    }
+  };
+
+  // Collect from ONE integration
+  const collectOne = async (sourceId) => {
+    setCollectingOne(prev => ({ ...prev, [sourceId]: true }));
+    setCollectResult(null);
+    try {
+      const res = await integrationsAPI.collectOne(sourceId);
+      setCollectResult({ ...res.data, source: sourceId });
+      await load();
+    } catch (e) {
+      setCollectResult({ error: String(e) });
+    } finally {
+      setCollectingOne(prev => ({ ...prev, [sourceId]: false }));
+    }
+  };
+
+  useEffect(() => { load(); loadIntegrations(); }, []);
 
   useEffect(() => {
     let result = evidence;
@@ -92,6 +148,131 @@ const Evidence = () => {
           </motion.button>
         </div>
       </motion.div>
+
+      {/* ── Integrations Panel ── */}
+      <div className="glass-effect rounded-2xl border border-white/10 overflow-hidden">
+        {/* Accordion header */}
+        <button
+          onClick={() => setShowIntegrations(v => !v)}
+          className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/5 transition-colors"
+        >
+          <div className="flex items-center space-x-3">
+            <Zap className="w-5 h-5 text-yellow-400" />
+            <span className="font-semibold">Evidence Integrations</span>
+            <span className="text-xs text-gray-400 bg-white/5 px-2 py-0.5 rounded-full">
+              Auto-collect from live sources
+            </span>
+          </div>
+          <div className="flex items-center space-x-3">
+            <motion.button
+              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+              onClick={e => { e.stopPropagation(); collectAll(); }}
+              disabled={collectingAll}
+              className="flex items-center space-x-1.5 px-4 py-1.5 rounded-lg bg-yellow-500/20 border border-yellow-500/30 text-yellow-300 text-xs font-medium hover:bg-yellow-500/30 disabled:opacity-40"
+            >
+              {collectingAll
+                ? <Loader className="w-3.5 h-3.5 animate-spin" />
+                : <Zap className="w-3.5 h-3.5" />}
+              <span>{collectingAll ? 'Collecting…' : 'Collect All'}</span>
+            </motion.button>
+            {showIntegrations ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+          </div>
+        </button>
+
+        <AnimatePresence>
+          {showIntegrations && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="overflow-hidden border-t border-white/10"
+            >
+              <div className="p-5 space-y-4">
+                {/* What is this? */}
+                <p className="text-sm text-gray-400">
+                  Integrations automatically collect evidence from external systems and store it in the
+                  repository. In production these connect to real APIs; here they generate realistic mock records.
+                </p>
+
+                {/* Integration cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {Object.entries(INTEGRATION_META).map(([id, meta]) => {
+                    const info = integrations.find(i => i.id === id) || {};
+                    const busy = collectingOne[id];
+                    return (
+                      <div key={id}
+                        className="flex items-start justify-between p-4 rounded-xl bg-white/5 border border-white/10 gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <div className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                              style={{ background: meta.color }} />
+                            <span className="font-medium text-sm">{meta.label}</span>
+                          </div>
+                          <p className="text-xs text-gray-400 leading-relaxed">{meta.desc}</p>
+                          {info.frameworks && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {info.frameworks.map(fw => (
+                                <span key={fw} className="text-xs px-1.5 py-0.5 rounded bg-white/5 text-gray-400 border border-white/10">{fw}</span>
+                              ))}
+                            </div>
+                          )}
+                          {info.real_tool && (
+                            <div className="mt-2 text-xs text-gray-500 font-mono truncate">
+                              Real: {info.real_tool}
+                            </div>
+                          )}
+                        </div>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                          onClick={() => collectOne(id)}
+                          disabled={!!busy || collectingAll}
+                          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border disabled:opacity-40 flex-shrink-0"
+                          style={{
+                            background: `${meta.color}20`,
+                            borderColor: `${meta.color}40`,
+                            color: meta.color,
+                          }}
+                        >
+                          {busy
+                            ? <Loader className="w-3 h-3 animate-spin" />
+                            : <Play className="w-3 h-3" />}
+                          <span>{busy ? 'Running…' : 'Collect'}</span>
+                        </motion.button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Result banner */}
+                {collectResult && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+                    className={`px-4 py-3 rounded-xl text-sm border ${
+                      collectResult.error
+                        ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                        : 'bg-green-500/10 border-green-500/20 text-green-300'
+                    }`}
+                  >
+                    {collectResult.error ? (
+                      `Error: ${collectResult.error}`
+                    ) : collectResult.total_collected !== undefined ? (
+                      <>
+                        ✅ Collected <strong>{collectResult.total_collected}</strong> records from {Object.keys(collectResult.by_source || {}).length} sources —&nbsp;
+                        {Object.entries(collectResult.by_source || {}).map(([k, v]) =>
+                          `${INTEGRATION_META[k]?.label || k}: ${v}`
+                        ).join(', ')}
+                      </>
+                    ) : (
+                      <>✅ Collected <strong>{collectResult.collected}</strong> records from {INTEGRATION_META[collectResult.source]?.label || collectResult.source}</>
+                    )}
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Filters */}
       <div className="glass-effect rounded-2xl border border-white/10 p-4 flex flex-wrap gap-4">

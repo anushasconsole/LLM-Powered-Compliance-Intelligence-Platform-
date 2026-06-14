@@ -116,66 +116,210 @@ Respond ONLY with valid JSON array. No markdown."""
         return requirements
 
     def _mock_extract(self, policy_doc: PolicyDocument) -> List[ExtractedRequirement]:
-        """Generate realistic mock requirements based on policy content."""
-        text = policy_doc.policy_text if hasattr(policy_doc, 'policy_text') else policy_doc.extracted_text
+        """
+        Generate requirements from policy content.
+
+        Primary strategy: parse structured REQUIREMENT N: lines directly from the text.
+        Fallback: keyword-template approach when no structured lines are found.
+        """
+        text = policy_doc.extracted_text
         text_lower = text.lower()
 
+        # ── Strategy 1: parse structured "REQUIREMENT N: ..." lines ──────────
+        structured = self._parse_structured_requirements(text, policy_doc)
+        if len(structured) >= 2:
+            return structured
+
+        # ── Strategy 2: keyword-template fallback ─────────────────────────────
+        return self._keyword_templates(text, text_lower, policy_doc)
+
+    def _parse_structured_requirements(
+        self, text: str, policy_doc: PolicyDocument
+    ) -> List[ExtractedRequirement]:
+        """
+        Parse blocks like:
+            REQUIREMENT 1: <text>
+            - Responsible: ...
+            - Compliance Mapping: GDPR Article 32, NIST SC-7
+        """
+        import re
+
+        # Split policy text into per-policy blocks
+        policy_blocks = re.split(r'\n---\n', text.strip())
+
+        requirements = []
+        req_counter = 0
+
+        for block in policy_blocks:
+            # Extract policy metadata
+            pid_match  = re.search(r'POLICY_ID\s*:\s*(\S+)', block, re.IGNORECASE)
+            name_match = re.search(r'^POLICY\s*:\s*(.+)', block, re.IGNORECASE | re.MULTILINE)
+            policy_id  = pid_match.group(1).strip()  if pid_match  else policy_doc.policy_id
+            policy_nm  = name_match.group(1).strip() if name_match else policy_doc.policy_name
+
+            # Find all REQUIREMENT lines
+            req_matches = re.finditer(
+                r'REQUIREMENT\s+\d+\s*:\s*(.+?)(?=\nREQUIREMENT\s+\d|\Z)',
+                block, re.DOTALL | re.IGNORECASE
+            )
+
+            for rm in req_matches:
+                req_counter += 1
+                req_block = rm.group(0)
+                req_text  = rm.group(1).split('\n')[0].strip()
+
+                # Extract compliance mapping
+                cm_match = re.search(
+                    r'Compliance Mapping\s*:\s*(.+)', req_block, re.IGNORECASE
+                )
+                frameworks: List[str] = []
+                if cm_match:
+                    cm_raw = cm_match.group(1)
+                    fw_map = {
+                        'gdpr': 'GDPR', 'nist': 'NIST', 'sox': 'SOX',
+                        'pci': 'PCI-DSS', 'hipaa': 'HIPAA',
+                        'iso 27001': 'ISO27001', 'iso27001': 'ISO27001',
+                        'cis': 'CIS',
+                    }
+                    for key, value in fw_map.items():
+                        if key in cm_raw.lower() and value not in frameworks:
+                            frameworks.append(value)
+                if not frameworks:
+                    frameworks = ['General']
+
+                # Extract responsible team
+                resp_match = re.search(
+                    r'Responsible\s*:\s*(.+)', req_block, re.IGNORECASE
+                )
+                team = resp_match.group(1).strip() if resp_match else 'Security Team'
+
+                # Extract frequency
+                freq_match = re.search(
+                    r'Audit Frequency\s*:\s*(.+)', req_block, re.IGNORECASE
+                )
+                freq = freq_match.group(1).strip().lower() if freq_match else 'monthly'
+
+                # Derive control area and severity from content
+                tl = req_text.lower()
+                if any(w in tl for w in ['encrypt', 'aes', 'tls', 'kms', 'crypto']):
+                    area, severity = 'Encryption', 'CRITICAL'
+                elif any(w in tl for w in ['access', 'auth', 'mfa', 'privilege', 'iam']):
+                    area, severity = 'Access Control', 'CRITICAL'
+                elif any(w in tl for w in ['log', 'audit', 'monitor', 'retain']):
+                    area, severity = 'Audit Logging', 'HIGH'
+                elif any(w in tl for w in ['incident', 'breach', 'notification', 'response']):
+                    area, severity = 'Incident Response', 'HIGH'
+                elif any(w in tl for w in ['change', 'segregat', 'financial', 'sox']):
+                    area, severity = 'Financial Controls', 'HIGH'
+                elif any(w in tl for w in ['backup', 'recovery', 'continuity']):
+                    area, severity = 'Business Continuity', 'MEDIUM'
+                elif any(w in tl for w in ['asset', 'classif', 'inventory']):
+                    area, severity = 'Asset Management', 'MEDIUM'
+                else:
+                    area, severity = 'General', 'MEDIUM'
+
+                requirements.append(ExtractedRequirement(
+                    req_id=f"{policy_id}-REQ{req_counter:03d}",
+                    policy_id=policy_id,
+                    policy_name=policy_nm,
+                    requirement_text=req_text,
+                    structured_requirement=req_text,
+                    frameworks=frameworks,
+                    control_area=area,
+                    burden_of_proof=[],
+                    evidence_types_expected=['Report', 'Configuration Snapshot'],
+                    freshness_requirement=freq,
+                    responsible_team=team,
+                    severity=severity,
+                    confidence_score=0.85,
+                    extraction_rationale='Parsed from structured REQUIREMENT block',
+                ))
+
+        return requirements
+
+    def _keyword_templates(
+        self, text: str, text_lower: str, policy_doc: PolicyDocument
+    ) -> List[ExtractedRequirement]:
+        """Keyword-template fallback for unstructured policy text."""
         templates = []
 
         if "encrypt" in text_lower or "aes" in text_lower or "kms" in text_lower:
             templates += [
                 ("All data at rest must be encrypted using AES-256 or stronger",
-                 "Encryption at rest: AES-256 minimum", ["GDPR", "NIST", "PCI-DSS"], "Encryption",
-                 ["AES-256 algorithm confirmed", "All data stores encrypted", "Key management documented"],
-                 ["Encryption Certificate", "Configuration Snapshot"], "quarterly", "CRITICAL", "Security Team"),
+                 "Encryption at rest: AES-256 minimum", ["GDPR", "NIST", "PCI-DSS"],
+                 "Encryption", ["Encryption Certificate", "Configuration Snapshot"],
+                 "quarterly", "CRITICAL", "Security Team"),
                 ("Encryption keys must be rotated at least annually",
-                 "Key rotation: all keys rotated ≤ 365 days", ["NIST", "PCI-DSS", "ISO 27001"], "Key Management",
-                 ["Rotation schedule documented", "Last rotation within threshold", "Rotation logs available"],
-                 ["Key Rotation Log", "Audit Log"], "monthly", "HIGH", "Security Team"),
+                 "Key rotation: all keys rotated ≤ 365 days", ["NIST", "PCI-DSS", "ISO27001"],
+                 "Key Management", ["Key Rotation Log", "Audit Log"],
+                 "monthly", "HIGH", "Security Team"),
                 ("Data in transit must use TLS 1.2 or higher",
-                 "Transit encryption: TLS 1.2+", ["GDPR", "NIST", "PCI-DSS"], "Encryption",
-                 ["TLS version verified", "Certificates valid", "No plaintext transmission"],
-                 ["SSL Certificate", "Network Configuration", "Test Report"], "quarterly", "CRITICAL", "Network Security"),
+                 "Transit encryption: TLS 1.2+", ["GDPR", "NIST", "PCI-DSS"],
+                 "Encryption", ["SSL Certificate", "Network Configuration"],
+                 "quarterly", "CRITICAL", "Network Security"),
             ]
 
         if "access" in text_lower or "authentication" in text_lower or "mfa" in text_lower:
             templates += [
                 ("Administrative access requires multi-factor authentication",
-                 "MFA required for all admin accounts", ["NIST", "CIS", "GDPR"], "Multi-Factor Auth",
-                 ["MFA enabled on all admin accounts", "Users required to use MFA", "Backup auth documented"],
-                 ["Configuration Snapshot", "Policy Document", "Test Report"], "quarterly", "CRITICAL", "IT Operations"),
+                 "MFA required for all admin accounts", ["NIST", "CIS", "GDPR"],
+                 "Multi-Factor Auth", ["Configuration Snapshot", "Policy Document"],
+                 "quarterly", "CRITICAL", "IT Operations"),
                 ("Access must follow principle of least privilege",
-                 "Least privilege: users have minimum required access", ["NIST", "SOX", "ISO 27001"], "Access Control",
-                 ["Access reviews completed quarterly", "No excess permissions found", "Role definitions documented"],
-                 ["Access Report", "IAM Configuration", "Review Log"], "quarterly", "HIGH", "Access Control Board"),
+                 "Least privilege: users have minimum required access",
+                 ["NIST", "SOX", "ISO27001"], "Access Control",
+                 ["Access Report", "IAM Configuration"],
+                 "quarterly", "HIGH", "Access Control Board"),
             ]
 
         if "log" in text_lower or "audit" in text_lower or "monitor" in text_lower:
             templates += [
                 ("All access to sensitive data must be logged",
-                 "Audit logging: all access events captured with timestamp", ["GDPR", "NIST", "SOX"], "Audit Logging",
-                 ["Logs capture all access attempts", "Logs include timestamp actor action", "Logs retained 90+ days"],
-                 ["Audit Log", "Configuration Snapshot"], "continuous", "CRITICAL", "Security Operations"),
+                 "Audit logging: all access events captured",
+                 ["GDPR", "NIST", "SOX"], "Audit Logging",
+                 ["Audit Log", "Configuration Snapshot"],
+                 "continuous", "CRITICAL", "Security Operations"),
                 ("Logs must be retained for minimum 90 days",
-                 "Log retention: minimum 90 days", ["NIST", "PCI-DSS", "SOX"], "Audit Logging",
-                 ["Retention policy set to 90+ days", "Storage capacity verified", "Archived logs accessible"],
-                 ["Log Storage Configuration", "Retention Policy"], "monthly", "HIGH", "Log Management"),
+                 "Log retention: minimum 90 days", ["NIST", "PCI-DSS", "SOX"],
+                 "Audit Logging", ["Log Storage Configuration"],
+                 "monthly", "HIGH", "Log Management"),
+            ]
+
+        if "incident" in text_lower or "breach" in text_lower or "hipaa" in text_lower:
+            templates += [
+                ("Security incidents must be reported and investigated",
+                 "Incident response: all incidents reported within 72 hours",
+                 ["GDPR", "NIST", "HIPAA"], "Incident Response",
+                 ["Policy Document", "Test Report"],
+                 "annually", "HIGH", "Security Team"),
+            ]
+
+        if "financial" in text_lower or "sox" in text_lower or "segregat" in text_lower:
+            templates += [
+                ("Financial system access must be controlled and audited",
+                 "SOX 404: financial system access documented",
+                 ["SOX"], "Financial Controls",
+                 ["Access Control Report", "SOX 404 Documentation"],
+                 "quarterly", "HIGH", "Financial Controls Team"),
             ]
 
         if not templates:
             templates = [
                 ("Implement and maintain information security controls",
-                 "Information security: documented controls implemented", ["ISO 27001", "NIST"], "General",
-                 ["Controls documented", "Controls tested annually"], ["Policy Document", "Test Report"],
+                 "Information security: documented controls implemented",
+                 ["ISO27001", "NIST"], "General",
+                 ["Policy Document", "Test Report"],
                  "annually", "MEDIUM", "Security Team"),
                 ("Security incidents must be reported and investigated",
-                 "Incident response: all incidents reported within 72 hours", ["GDPR", "NIST", "HIPAA"], "Incident Response",
-                 ["IR plan documented", "Plan tested within 12 months", "Roles defined"],
-                 ["Policy Document", "Test Report", "Training Record"], "annually", "HIGH", "Security Team"),
+                 "Incident response: all incidents reported within 72 hours",
+                 ["GDPR", "NIST", "HIPAA"], "Incident Response",
+                 ["Policy Document", "Test Report"],
+                 "annually", "HIGH", "Security Team"),
             ]
 
         requirements = []
-        for idx, (req_text, structured, frameworks, area, burden, evidence_types, freshness, severity, team) in enumerate(templates, 1):
+        for idx, (req_text, structured, frameworks, area, evidence_types,
+                   freshness, severity, team) in enumerate(templates, 1):
             requirements.append(ExtractedRequirement(
                 req_id=f"{policy_doc.policy_id}-REQ{idx:03d}",
                 policy_id=policy_doc.policy_id,
@@ -184,13 +328,13 @@ Respond ONLY with valid JSON array. No markdown."""
                 structured_requirement=structured,
                 frameworks=frameworks,
                 control_area=area,
-                burden_of_proof=burden,
+                burden_of_proof=[],
                 evidence_types_expected=evidence_types,
                 freshness_requirement=freshness,
                 responsible_team=team,
                 severity=severity,
                 confidence_score=0.85,
-                extraction_rationale="Extracted from policy document"
+                extraction_rationale='Extracted from policy document (keyword match)',
             ))
         return requirements
 

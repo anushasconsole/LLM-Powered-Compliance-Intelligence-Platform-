@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Shield, Database, BarChart3, AlertTriangle, FileText,
-  Settings, Sparkles, Network, Zap
+  Settings, Sparkles, Network, Zap, AlertOctagon
 } from 'lucide-react';
 
 const Navbar = ({ apiStatus }) => {
@@ -18,6 +18,7 @@ const Navbar = ({ apiStatus }) => {
     { path: '/challenge-audit', icon: AlertTriangle, label: 'Challenge', color: 'from-orange-400 to-red-400' },
     { path: '/confidence', icon: Zap, label: 'Confidence', color: 'from-amber-400 to-orange-400' },
     { path: '/knowledge-graph', icon: Network, label: 'Graph', color: 'from-cyan-400 to-blue-400' },
+    { path: '/anomaly', icon: AlertOctagon, label: 'Anomaly', color: 'from-red-400 to-orange-400' },
     { path: '/reports', icon: FileText, label: 'Reports', color: 'from-indigo-400 to-purple-400' },
     { path: '/settings', icon: Settings, label: 'Settings', color: 'from-gray-400 to-slate-400' },
   ];
